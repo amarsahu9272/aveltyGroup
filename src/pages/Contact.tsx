@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { Mail, Phone, MapPin, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -33,11 +34,36 @@ const ContactPage = () => {
   const onSubmit = async (data: ContactFormData) => {
     setLoading(true);
     try {
-      await addDoc(collection(db, 'leads'), {
-        ...data,
-        status: 'New',
-        createdAt: serverTimestamp(),
+      // 1. Save to Firestore
+      try {
+        const leadRef = await addDoc(collection(db, 'leads'), {
+          ...data,
+          status: 'New',
+          createdAt: serverTimestamp(),
+        });
+
+        // Add notification for new lead
+        await addDoc(collection(db, 'notifications'), {
+          type: 'new_lead',
+          title: 'New Lead Alert',
+          message: `New inquiry from ${data.name} (${data.email})`,
+          relatedId: leadRef.id,
+          createdAt: serverTimestamp(),
+          read: false
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'leads');
+      }
+
+      // 2. Send email notification via backend
+      await fetch('/api/leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
       });
+
       setSubmitted(true);
       reset();
     } catch (error) {

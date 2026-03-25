@@ -2,6 +2,7 @@ import React from 'react';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Building2, LogIn, Loader2 } from 'lucide-react';
 
@@ -19,16 +20,20 @@ const LoginPage = () => {
       const user = result.user;
 
       // Check if user exists in Firestore
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (!userDoc.exists()) {
-        // Create default staff user if it's the first time
-        // Note: In a real app, you'd have an approval process
-        await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          role: 'staff', // Default role
-        });
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!userDoc.exists()) {
+          // Create default staff user if it's the first time
+          // Note: In a real app, you'd have an approval process
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            role: 'staff', // Default role
+          });
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
       }
       navigate(from, { replace: true });
     } catch (error) {

@@ -48,14 +48,19 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "amaratwork01@gmail.com" && request.auth.token.email_verified == true));
+      return isAuthenticated() && (
+        (request.auth.token.email == "amaratwork01@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
     }
 
     function isStaff() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff' || isAdmin());
+      return isAuthenticated() && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff')
+      );
     }
 
     // Domain Validators
@@ -64,12 +69,13 @@ service cloud.firestore {
              data.description is string && data.description.size() > 0 && data.description.size() < 5000 &&
              data.location is string && data.location.size() > 0 &&
              data.type in ['Residential', 'Commercial', 'Roads', 'Infrastructure'] &&
-             data.status in ['Ongoing', 'Completed'];
+             data.status in ['Ongoing', 'Completed'] &&
+             (!('statusHistory' in data) || data.statusHistory is list);
     }
 
     function isValidLead(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.email is string && data.email.size() > 0 &&
              data.phone is string && data.phone.size() > 0 &&
              data.requirement is string && data.requirement.size() > 0 && data.requirement.size() < 2000;
     }
@@ -79,9 +85,16 @@ service cloud.firestore {
              data.role in ['admin', 'staff'];
     }
 
+    function isValidNotification(data) {
+      return data.type in ['project_status_change', 'new_lead'] &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 1000 &&
+             data.createdAt is timestamp;
+    }
+
     // Rules
     match /projects/{projectId} {
-      allow read: if true; // Publicly readable
+      allow read: if true;
       allow create, update: if isStaff() && isValidProject(request.resource.data);
       allow delete: if isAdmin();
     }
@@ -89,14 +102,24 @@ service cloud.firestore {
     match /leads/{leadId} {
       allow read: if isStaff();
       allow create: if isValidLead(request.resource.data);
-      allow update: if isStaff() && isValidLead(request.resource.data);
+      allow update: if isStaff();
       allow delete: if isAdmin();
     }
 
     match /users/{userId} {
-      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
-      allow create: if isAuthenticated() && isOwner(userId) && request.resource.data.role == 'staff'; // Default role
+      allow read: if isAuthenticated() && (isOwner(userId) || isStaff());
+      allow create: if isAuthenticated() && isOwner(userId);
       allow update: if isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role);
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isStaff();
+      allow create: if isValidNotification(request.resource.data) && (
+        (request.resource.data.type == 'new_lead') ||
+        (request.resource.data.type == 'project_status_change' && isStaff())
+      );
+      allow update: if isStaff();
       allow delete: if isAdmin();
     }
   }

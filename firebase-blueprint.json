@@ -16,7 +16,19 @@
         "timeline": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
-        "staffAssigned": { "type": "array", "items": { "type": "string" } }
+        "staffAssigned": { "type": "array", "items": { "type": "string" } },
+        "statusHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string", "enum": ["Ongoing", "Completed"] },
+              "updatedAt": { "type": "string", "format": "date-time" },
+              "updatedBy": { "type": "string" },
+              "comment": { "type": "string" }
+            }
+          }
+        }
       },
       "required": ["title", "description", "location", "type", "status"]
     },
@@ -46,6 +58,21 @@
         "role": { "type": "string", "enum": ["admin", "staff"] }
       },
       "required": ["uid", "email", "role"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for project status changes or new leads",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["project_status_change", "new_lead"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "relatedId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["type", "title", "message", "createdAt"]
     }
   },
   "firestore": {
@@ -60,6 +87,10 @@
     "/users/{userId}": {
       "schema": "User",
       "description": "Collection of users with roles"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Collection of admin notifications"
     }
   }
 }

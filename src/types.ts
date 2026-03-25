@@ -1,6 +1,13 @@
 export type ProjectType = 'Residential' | 'Commercial' | 'Roads' | 'Infrastructure';
 export type ProjectStatus = 'Ongoing' | 'Completed';
 
+export interface StatusHistoryEntry {
+  status: ProjectStatus;
+  updatedAt: string;
+  updatedBy: string;
+  comment?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -14,6 +21,7 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   staffAssigned?: string[];
+  statusHistory?: StatusHistoryEntry[];
 }
 
 export type LeadStatus = 'New' | 'Contacted' | 'Converted' | 'Closed';
@@ -35,4 +43,16 @@ export interface User {
   email: string;
   displayName?: string;
   role: UserRole;
+}
+
+export type NotificationType = 'project_status_change' | 'new_lead';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  relatedId?: string;
+  createdAt: string;
+  read?: boolean;
 }

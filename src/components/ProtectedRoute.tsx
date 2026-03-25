@@ -20,6 +20,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
   React.useEffect(() => {
     const fetchUserData = async () => {
       if (user) {
+        // Allow default admin even if no document exists
+        if (user.email === 'amaratwork01@gmail.com') {
+          setUserData({ uid: user.uid, email: user.email, role: 'admin' } as User);
+          setUserLoading(false);
+          return;
+        }
+
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           setUserData(userDoc.data() as User);
