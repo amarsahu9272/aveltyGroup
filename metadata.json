@@ -1,0 +1,7 @@
+{
+  "name": "Avelty Group",
+  "description": "A professional real estate and construction management platform for showcasing projects and managing leads.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

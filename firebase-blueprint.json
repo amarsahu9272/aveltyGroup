@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A construction or real estate project by Avelty Group",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "location": { "type": "string" },
+        "type": { "type": "string", "enum": ["Residential", "Commercial", "Roads", "Infrastructure"] },
+        "status": { "type": "string", "enum": ["Ongoing", "Completed"] },
+        "imageUrl": { "type": "string" },
+        "gallery": { "type": "array", "items": { "type": "string" } },
+        "timeline": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "staffAssigned": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["title", "description", "location", "type", "status"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "A customer inquiry or lead",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "requirement": { "type": "string" },
+        "status": { "type": "string", "enum": ["New", "Contacted", "Converted", "Closed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "phone", "requirement"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A staff or admin user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff"] }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Collection of projects"
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Collection of customer leads"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of users with roles"
+    }
+  }
+}
